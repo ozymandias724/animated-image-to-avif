@@ -57,7 +57,6 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-
           # Download prebuilt avifenc binary
           Invoke-WebRequest `
             -Uri "https://github.com/AOMediaCodec/libavif/releases/download/v1.4.2/windows-artifacts.zip" `
@@ -66,12 +65,13 @@ jobs:
           # Extract archive
           Expand-Archive `
             -Path "libavif.zip" `
-            -DestinationPath "C:\\tools"
+            -DestinationPath "C:\tools"
 
-          # Add avifenc.exe location to PATH
+          # Find and add avifenc.exe location to PATH
+          $avifencPath = (Get-ChildItem -Path "C:\tools" -Filter "avifenc.exe" -Recurse).Directory.FullName
           Add-Content `
             -Path $env:GITHUB_PATH `
-            -Value "C:\\tools\\windows-artifacts"
+            -Value $avifencPath
 
       # Validate encoder availability
       - name: Verify avifenc
