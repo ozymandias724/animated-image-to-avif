@@ -3,7 +3,7 @@
 import { convert } from "./convert";
 
 import type { PresetName } from "./presets";
-
+import type { LogLevel } from "./log";
 import { formatBytes, formatDuration, formatReduction } from "./format";
 
 // Simple CLI adapter
@@ -49,7 +49,15 @@ function getStringFlag(flag: string) {
 
 const preserveAlpha = !process.argv.includes("--no-alpha");
 
-const debug = process.argv.includes("--debug");
+let logLevel: LogLevel = "verbose";
+
+if (process.argv.includes("--debug")) {
+  logLevel = "debug";
+}
+
+if (process.argv.includes("--quiet")) {
+  logLevel = "quiet";
+}
 
 const quality = getNumberFlag("--quality", 50);
 
@@ -69,7 +77,7 @@ const result = await convert({
   speed,
 
   preserveAlpha,
-  debug,
+  logLevel,
 });
 
 console.log("\nConversion complete.\n");

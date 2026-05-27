@@ -1,54 +1,28 @@
 /// <reference types="node" />
 
 import fs from "node:fs";
-
+import { createLogger } from "./log";
 import { resolveConfig } from "./config";
-
 import { getAnimationMetadata } from "./metadata";
 import { extractFrame } from "./frame";
-
 import { buildY4MHeader, writeFrame, expandFrameTimings } from "./y4m";
-
 import { createAvifEncoder } from "./avifenc";
-
 import type { ConvertOptions } from "./config";
-
-import type { PresetName } from "./presets";
 import type { AnimationFrame } from "./frame";
 import type { ConversionResult } from "./result";
-
-import type { ConversionProgressEvent } from "./progress";
-
-function createDebugLogger(enabled: boolean) {
-  return (...args: unknown[]) => {
-    if (enabled) {
-      console.log(...args);
-    }
-  };
-}
 
 // Main animated image → AVIF conversion pipeline
 export async function convert(
   options: ConvertOptions,
 ): Promise<ConversionResult> {
   // Normalize and validate config up front
-  const {
-    input,
-    output,
-
-    preset,
-
-    quality,
-    speed,
-
-    preserveAlpha,
-    debug: debugEnabled,
-  } = resolveConfig(options);
+  const { input, output, preset, quality, speed, preserveAlpha, logLevel } =
+    resolveConfig(options);
 
   // Runtime callbacks are not configuration
   const { onProgress } = options;
 
-  const debug = createDebugLogger(debugEnabled);
+  const logger = createLogger(logLevel);
 
   // Track total conversion duration
   const startTime = performance.now();
@@ -56,7 +30,7 @@ export async function convert(
   // Capture original input filesize
   const inputSize = fs.statSync(input).size;
 
-  console.log("Loading animation metadata...");
+  logger.verbose("Loading animation metadata...");
 
   onProgress?.({
     type: "stage",
@@ -65,36 +39,37 @@ export async function convert(
 
   const metadata = await getAnimationMetadata(input);
 
-  debug("\nFULL METADATA:");
-  debug(metadata);
+  logger.debug("\nFULL METADATA:");
+  logger.debug(metadata);
 
   // Respect source alpha unless explicitly disabled
   const hasAlpha = metadata.hasAlpha && preserveAlpha;
 
-  console.log(`Frames detected: ${metadata.pages}`);
+  logger.verbose(`Frames detected: ${metadata.pages}`);
 
-  console.log(`Resolution: ${metadata.width}x${metadata.height}`);
+  logger.verbose(`Resolution: ${metadata.width}x${metadata.height}`);
 
-  console.log(`Source alpha detected: ${metadata.hasAlpha}`);
+  logger.verbose(`Source alpha detected: ${metadata.hasAlpha}`);
 
-  console.log(`Encoding alpha: ${hasAlpha}`);
+  logger.verbose(`Encoding alpha: ${hasAlpha}`);
 
-  console.log("\nEncoding settings:");
+  logger.verbose("\nEncoding settings:");
 
-  console.log({
+  logger.verbose({
     preset: preset ?? "custom",
 
     quality,
     speed,
   });
 
-  console.log("\nStarting avifenc...");
+  logger.debug("Launching avifenc process");
 
   // Streaming encoder child process
   const avifenc = createAvifEncoder({
     output,
     quality,
     speed,
+    logLevel,
   });
 
   // Build timing-aware Y4M stream header
@@ -105,8 +80,8 @@ export async function convert(
     delays: metadata.delays,
   });
 
-  debug("\nY4M HEADER:");
-  debug(header);
+  logger.debug("\nY4M HEADER:");
+  logger.debug(header);
 
   avifenc.stdin.write(header);
 
@@ -132,7 +107,7 @@ export async function convert(
       total: expandedFrames.length,
     });
 
-    console.log(`Processing frame ${index + 1}/${expandedFrames.length}`);
+    logger.debug(`Processing frame ${index + 1}/${expandedFrames.length}`);
 
     let frameData = frameCache.get(frame);
 

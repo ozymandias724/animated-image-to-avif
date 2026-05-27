@@ -1,40 +1,29 @@
 import fs from "node:fs";
 import path from "node:path";
-
-import type {
-  ConversionProgressEvent
-} from "./progress";
+import type { LogLevel } from "./log";
+import type { ConversionProgressEvent } from "./progress";
 import { PRESETS, type PresetName } from "./presets";
 
 export type ResolvedConfig = {
   input: string;
   output: string;
-
   preset?: PresetName;
-
   quality: number;
   speed: number;
-
   preserveAlpha: boolean;
-  debug: boolean;
+  logLevel: LogLevel;
 };
 
 export type ConvertOptions = {
   input: string;
   output: string;
-
   preset?: PresetName;
-
   quality?: number;
   speed?: number;
-
   preserveAlpha?: boolean;
-  debug?: boolean;
-
+  logLevel?: LogLevel;
   // Optional runtime progress events
-  onProgress?: (
-    event: ConversionProgressEvent
-  ) => void;
+  onProgress?: (event: ConversionProgressEvent) => void;
 };
 
 // Shared numeric range guard
@@ -82,11 +71,9 @@ export function resolveConfig(options: ConvertOptions): ResolvedConfig {
   const {
     input,
     output,
-
     preset,
-
     preserveAlpha = true,
-    debug = false,
+    logLevel = "quiet",
   } = options;
 
   // Basic path validation
@@ -130,6 +117,6 @@ export function resolveConfig(options: ConvertOptions): ResolvedConfig {
     speed,
 
     preserveAlpha,
-    debug,
+    logLevel,
   };
 }
