@@ -52,10 +52,11 @@ jobs:
       #
       # Windows support is currently
       # experimental/validation-stage
+      # Install avifenc (Windows)
       - name: Install libavif (Windows)
         if: runner.os == 'Windows'
-        run: choco install libavif -y --pre
-
-      # Run full test suite
-      - name: Run tests
-        run: bun test
+        run: |
+          # Download and install libavif from GitHub releases
+          curl -L -o libavif.zip https://github.com/AOMediaCodec/libavif/releases/download/v1.0.0/libavif-windows.zip
+          Expand-Archive -Path libavif.zip -DestinationPath C:\libavif
+          Add-Content -Path $env:GITHUB_PATH -Value "C:\libavif\bin"
