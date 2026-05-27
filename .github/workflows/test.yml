@@ -1,0 +1,48 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # Download repository
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Install Bun
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      # Install dependencies
+      - name: Install dependencies
+        run: bun install
+
+      # Install avifenc (Ubuntu)
+      - name: Install libavif (Ubuntu)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libavif-bin
+
+      # Install avifenc (macOS)
+      - name: Install libavif (macOS)
+        if: runner.os == 'macOS'
+        run: brew install libavif
+
+      # Install avifenc (Windows)
+      - name: Install libavif (Windows)
+        if: runner.os == 'Windows'
+        run: choco install libavif -y
+
+      # Run tests
+      - name: Run tests
+        run: bun test
