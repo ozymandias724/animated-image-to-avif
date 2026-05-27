@@ -11,6 +11,7 @@ jobs:
         os:
           - ubuntu-latest
           - macos-latest
+          - windows-latest
 
     runs-on: ${{ matrix.os }}
 
@@ -23,11 +24,15 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
-      # Install JS dependencies
+      # Install project dependencies
       - name: Install dependencies
         run: bun install
 
-      # Runtime scratch space for tests
+      # Runtime scratch space used by
+      # integration conversion tests
+      #
+      # fixtures/ is tracked in git
+      # tmp/ is intentionally ephemeral
       - name: Create tmp directory
         run: mkdir -p tmp
 
@@ -43,7 +48,35 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install libavif
 
-      
-      # Run test suite
+      # Install avifenc (Windows)
+      #
+      # Windows package manager support
+      # for avifenc is inconsistent, so
+      # install upstream binaries directly.
+      - name: Install avifenc (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+
+          # Download prebuilt avifenc binary
+          Invoke-WebRequest `
+            -Uri "https://github.com/AOMediaCodec/libavif/releases/download/v1.4.2/windows-artifacts.zip" `
+            -OutFile "libavif.zip"
+
+          # Extract archive
+          Expand-Archive `
+            -Path "libavif.zip" `
+            -DestinationPath "C:\\tools"
+
+          # Add avifenc.exe location to PATH
+          Add-Content `
+            -Path $env:GITHUB_PATH `
+            -Value "C:\\tools\\windows-artifacts"
+
+      # Validate encoder availability
+      - name: Verify avifenc
+        run: avifenc --version
+
+      # Run full test suite
       - name: Run tests
         run: bun test
