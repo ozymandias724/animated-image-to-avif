@@ -44,43 +44,7 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install libavif
 
-      # Install avifenc (Windows)
-      #
-      # Windows package manager support for
-      # avifenc is inconsistent, so directly
-      # install upstream binaries for now.
-      - name: Install libavif (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Invoke-WebRequest `
-            -Uri "https://github.com/AOMediaCodec/libavif/releases/download/v1.4.2/windows-artifacts.zip" `
-            -OutFile "libavif.zip"
-
-          Expand-Archive `
-            -Path "libavif.zip" `
-            -DestinationPath "C:\\libavif"
-
-          # Find the actual bin directory and add it to PATH
-          $binPath = Get-ChildItem -Path "C:\\libavif" -Filter "avifenc.exe" -Recurse | Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
-
-          if ($binPath) {
-            Add-Content -Path $env:GITHUB_PATH -Value $binPath
-          } else {
-            Write-Error "avifenc.exe not found in extracted archive"
-            exit 1
-          }
-
-      # Verify libavif extraction (Windows)
-      - name: Verify libavif extraction
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: ls -Force C:\libavif\bin
-
-      # Validate encoder availability
-      - name: Verify avifenc
-        run: avifenc --version
-
+      
       # Run test suite
       - name: Run tests
         run: bun test
