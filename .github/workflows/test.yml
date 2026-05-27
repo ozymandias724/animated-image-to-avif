@@ -61,9 +61,15 @@ jobs:
             -Path "libavif.zip" `
             -DestinationPath "C:\\libavif"
 
-          Add-Content `
-            -Path $env:GITHUB_PATH `
-            -Value "C:\\libavif\\bin"
+          # Find the actual bin directory and add it to PATH
+          $binPath = Get-ChildItem -Path "C:\\libavif" -Filter "avifenc.exe" -Recurse | Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
+
+          if ($binPath) {
+            Add-Content -Path $env:GITHUB_PATH -Value $binPath
+          } else {
+            Write-Error "avifenc.exe not found in extracted archive"
+            exit 1
+          }
 
       # Verify libavif extraction (Windows)
       - name: Verify libavif extraction
