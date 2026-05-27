@@ -54,7 +54,7 @@ jobs:
         shell: pwsh
         run: |
           Invoke-WebRequest `
-            -Uri "https://github.com/AOMediaCodec/libavif/releases/download/v1.0.1/libavif-1.0.1-win64.zip" `
+            -Uri "https://github.com/AOMediaCodec/libavif/releases/download/v1.4.2/windows-artifacts.zip" `
             -OutFile "libavif.zip"
 
           Expand-Archive `
