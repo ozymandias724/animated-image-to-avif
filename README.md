@@ -1,146 +1,90 @@
 # aviphy
 
-Animated image → AVIF conversion pipeline built with Bun, Sharp, and `avifenc`.
+Convert animated GIF and WebP images into animated AVIF using Bun and `avifenc`.
 
-Supports:
+`aviphy` is designed primarily as a programmable conversion library for:
 
-- Animated GIF input
-- Animated WebP input
-- Animated AVIF output
-- Alpha transparency preservation
-- Typed conversion APIs
-- Progress callbacks
-- Consumer-side orchestration
-
----
-
-## Why This Exists
-
-Most existing AVIF tooling is either:
-
-- CLI-only
-- image-only
-- tightly coupled to app logic
-- difficult to embed into pipelines
-- not focused on animated assets
-
-`animated-image-to-avif` is designed as:
-
-- reusable infrastructure
-- Bun-native TypeScript tooling
-- composable conversion primitives
-- lightweight pipeline integration
-
-The goal is to make animated AVIF conversion easy to integrate into:
-
-- apps
-- APIs
+- automation scripts
 - media pipelines
-- queue systems
-- batch processors
-- optimization workflows
+- Bun tooling
+- batch processing
+- developer workflows
+
+It supports:
+
+- animated GIF input
+- animated WebP input
+- animated AVIF output
+- alpha transparency
+- configurable quality/speed presets
+- progress callbacks
+- quiet / verbose / debug logging modes
+- cross-platform CI validation
 
 ---
 
-## Features
+# Requirements
 
-### Animated Input Support
+This package requires `avifenc` to be installed and available on your system PATH.
 
-- GIF → AVIF
-- Animated WebP → AVIF
-
-### Typed API Surface
-
-- Fully typed conversion options
-- Typed result contracts
-- Typed progress events
-
-### Timing Preservation
-
-Animation frame delays are normalized into a timing-safe Y4M stream before encoding.
-
-### Alpha Transparency
-
-Preserves transparency by default.
-
-### Bun + Sharp Workflow
-
-Designed around:
-
-- Bun runtime
-- Sharp image decoding
-- `avifenc` encoding
-
----
-
-## Requirements
-
-This package requires:
-
-- Bun
-- `avifenc`
-- Sharp-compatible environment
-
-### Install `avifenc`
-
-macOS (Homebrew):
+## macOS
 
 ```bash
 brew install libavif
 ```
 
-Verify:
+## Ubuntu / Debian
 
 ```bash
-avifenc --version
+sudo apt install libavif-bin
+```
+
+## Windows
+
+Download prebuilt binaries from:
+
+https://github.com/AOMediaCodec/libavif/releases
+
+Ensure `avifenc.exe` is available on your PATH.
+
+---
+
+# Installation
+
+```bash
+bun add aviphy
 ```
 
 ---
 
-## Installation
-
-```bash
-bun add animated-image-to-avif
-```
-
----
-
-## Basic Usage
+# Quick Start
 
 ```ts
-import { convert } from "animated-image-to-avif";
+import { convert } from "aviphy";
 
 await convert({
-  input: "./fixtures/test.gif",
-  output: "./tmp/output.avif",
+  input: "./input.gif",
+  output: "./output.avif",
 });
 ```
 
 ---
 
-## Advanced Usage
+# Basic Example
 
 ```ts
-import { convert } from "animated-image-to-avif";
+import { convert } from "aviphy";
 
 const result = await convert({
-  input: "./fixtures/test.webp",
-  output: "./tmp/output.avif",
+  input: "./input.webp",
+  output: "./output.avif",
+
+  preset: "balanced",
 
   quality: 60,
   speed: 6,
 
-  preserveAlpha: true,
-
-  onProgress(event) {
-    if (event.type === "stage") {
-      console.log("Stage:", event.stage);
-    }
-
-    if (event.type === "frame") {
-      console.log(`Frame ${event.current}/${event.total}`);
-    }
-  },
+  logLevel: "verbose",
 });
 
 console.log(result);
@@ -148,7 +92,61 @@ console.log(result);
 
 ---
 
-## Convert Options
+# Logging Modes
+
+## quiet (default)
+
+Minimal/no console output.
+
+Recommended for:
+
+- APIs
+- automation
+- embedded usage
+- scripting pipelines
+
+---
+
+## verbose
+
+Human-friendly operational logging.
+
+Includes:
+
+- metadata loading
+- encoder startup
+- conversion timing
+- compression results
+
+---
+
+## debug
+
+Maximum diagnostic visibility.
+
+Includes:
+
+- frame processing logs
+- raw encoder diagnostics
+- subprocess debugging information
+- encoder lifecycle details
+
+---
+
+# API
+
+## convert(options)
+
+```ts
+await convert({
+  input: "./input.gif",
+  output: "./output.avif",
+});
+```
+
+---
+
+# ConvertOptions
 
 ```ts
 type ConvertOptions = {
@@ -161,114 +159,87 @@ type ConvertOptions = {
   speed?: number;
 
   preserveAlpha?: boolean;
-  debug?: boolean;
 
-  onProgress?: (event: ConversionProgressEvent) => void;
+  logLevel?: "quiet" | "verbose" | "debug";
+
+  onProgress?: (
+    event: ConversionProgressEvent,
+  ) => void;
 };
 ```
 
 ---
 
-## Progress Events
+# Presets
 
 ```ts
-type ConversionProgressEvent =
-  | {
-      type: "stage";
-      stage: string;
-    }
-  | {
-      type: "frame";
-      current: number;
-      total: number;
-    };
+preset: "fast"
+preset: "balanced"
+preset: "quality"
 ```
+
+Presets provide sensible quality/speed defaults while still allowing explicit overrides.
 
 ---
 
-## Conversion Result
+# Result Object
 
 ```ts
-type ConversionResult = {
+{
   inputSize: number;
   outputSize: number;
-
   reductionPercent: number;
 
   sourceFrameCount: number;
 
   durationMs: number;
-};
+}
 ```
 
 ---
 
-## Presets
+# Progress Events
 
-Available presets:
+`aviphy` supports progress callbacks for custom:
 
-- `fast`
-- `balanced`
-- `high-quality`
-- `lossless`
+- progress bars
+- spinners
+- telemetry
+- logging systems
+- UI updates
 
 Example:
 
 ```ts
 await convert({
-  input: "input.gif",
-  output: "output.avif",
+  input: "./input.gif",
+  output: "./output.avif",
 
-  preset: "balanced",
+  onProgress(event) {
+    console.log(event);
+  },
 });
 ```
 
 ---
 
-## Example Batch Pipeline
+# CLI Utility
 
-The repository includes an example consumer-side batch processor:
+A lightweight CLI utility is included primarily for:
 
-```text
-examples/batch.ts
+- local testing
+- debugging
+- development workflows
+
+Example:
+
+```bash
+bun run src/cli.ts fixtures/test.gif tmp/output.avif --debug
 ```
 
-Batch orchestration intentionally lives outside the core engine so downstream applications can decide:
-
-- concurrency
-- queue systems
-- workers
-- retry behavior
-- scheduling
-
 ---
 
-## Design Philosophy
-
-This package intentionally separates:
-
-### Public API
-
-Stable consumer-facing conversion contracts.
-
-### Internal Engine
-
-Frame extraction, metadata handling, Y4M generation, and encoder orchestration remain internal implementation details.
-
-This allows the engine to evolve without breaking consumer integrations.
-
----
-
-## Testing
-
-The project includes:
-
-- subsystem tests
-- metadata extraction tests
-- frame extraction tests
-- timing normalization tests
-- integration conversion tests
-- packaged consumer validation
+# Development
 
 Run tests:
 
@@ -276,32 +247,15 @@ Run tests:
 bun test
 ```
 
----
-
-## Development
-
-Build:
+Run tests with coverage:
 
 ```bash
-bun run build
-```
-
-Generate package tarball:
-
-```bash
-npm pack
+bun test --coverage
 ```
 
 ---
 
-## Status
-
-Early alpha.
-
-The public API is stabilizing, but internal implementation details may continue evolving.
-
----
-
-## License
+# License
 
 MIT
+
